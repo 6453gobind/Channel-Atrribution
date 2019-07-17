@@ -1,0 +1,489 @@
+---
+title: "Altman Problem"
+author: "Gobind Agarwal"
+date: "19-02-2019"
+output: 
+  html_document: 
+    number_sections: TRUE
+---
+```{r include=FALSE}
+require(pscl)
+require(lmtest)
+library (caret)
+require(InformationValue)
+```
+#Problem
+Goal of the problem is to come up with a logistic regression model which predicts whether the company will be Bankrupt or Solvent. 
+
+Xs are the predictor variables. 'Status' is the 'Y' variable.
+
+Our given Data Looks like this:-
+```{r setup, echo=FALSE}
+
+Altman <- read.csv("Altman.csv",header = TRUE)
+Altman$Status<-as.integer(Altman$Status)-1
+attach(Altman)
+head(Altman)
+```
+STATUS =
+
+0 <- BANKRUPT
+
+1 <- SOLVENT
+
+```{r}
+
+#divind the whole data into training and testing data using createDataPartition() function of caret library
+set.seed(1234)
+train <- createDataPartition(Altman$Status,times=1,p=.8,list=FALSE)
+training=Altman[train,]
+test=Altman[-train,]
+
+```
+
+
+There are 7 models :- 
+```{r}
+model0 <- glm(Status ~ X1+X2+X3+X4+X5 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model1<- glm(Status ~ X1 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model2<- glm(Status ~ X2 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model3<- glm(Status ~ X3 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model4<- glm(Status ~ X4 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model5<- glm(Status ~ X5 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+model6<- glm(Status ~ X1+X4 ,data = training,family=binomial("logit"),control = list(maxit = 30))
+
+```
+
+*There may be a warning Message (NOT ERROR) in some Models:- "glm.fit: fitted probabilities numerically 0 or 1 occurred"
+
+This can be corrected by using:-
+
+1.)Firth's penalized likelihood method
+
+2.)LOGISTF Library
+
+3.)Median-unbiased estimates
+
+4.)Bayesian
+
+5.)Hidden logistic regression model 
+
+6.)GLMNET library
+
+
+# Check the Statistical significance of the model
+(Compare the Null Vs Residual Deviance)
+ We will see the following observation for all the models :-
+ 
+- Model 1 is better than Model 2 
+
+- NULL Hypothesis says :- all Betas are zero. 
+
+- We Reject the Null hypothesis of all Betas being 0
+
+- The result says atleast one of the betas is not equal to zero.
+
+- Logistic Regression can be applied for all the selected Models. 
+
+## Model 0
+```{r}
+lrtest(model0)
+```
+## Model 1
+```{r}
+lrtest(model1)
+```
+## Model 2
+```{r}
+lrtest(model2)
+```
+## Model 3
+```{r}
+lrtest(model3)
+```
+## Model 4
+```{r}
+lrtest(model4)
+```
+## Model 5
+```{r}
+lrtest(model5)
+```
+## Model 6
+```{r}
+lrtest(model6)
+```
+
+#Summary
+
+
+##Summary of Model 0
+```{r}
+summary(model0)
+```
+
+- Std. Error in this model > Estimates, which shows that this is a very bad model
+
+- All P-values are 0, showing that no variable is significant
+
+- If no variable is significant then this model is of no use
+
+- We Will Not Consider This Model Any Further 
+
+
+##Summary of Model 1
+```{r}
+summary(model1)
+```
+
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X1 is statistically significant
+
+- AIC = 47.22
+
+##Summary of Model 2
+```{r}
+summary(model2)
+```
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X2 is statistically significant
+
+- AIC = 13.192 (< Model 1)
+
+##Summary of Model 3
+```{r}
+summary(model3)
+```
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X3 is statistically significant
+
+- AIC = 27.181 (> model 2)
+
+##Summary of Model 4
+```{r}
+summary(model4)
+```
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X4 is statistically significant
+
+- AIC = 33.82
+
+##Summary of Model 5
+```{r}
+summary(model5)
+```
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X5 is 'NOT' statistically significant
+
+- AIC = 76.56
+
+##Summary of Model 6
+```{r}
+summary(model6)
+```
+- Std. Error in this model < Estimates, which shows that this is a good model
+
+- 0 does not appear in Estimates (+-) Std. error.
+
+- P-values shows that X1 and X4 is statistically significant.
+
+- AIC = 30.352
+
+
+
+
+#McFadden $R^{2}$
+## Thumb rule (McFadden $R^{2}$) -
+
+- Threshold of 10% is satisfactory
+- 10 to 30% - Good fit
+- 30% to 50% - Very Good
+- Above 50% - Excellent
+
+##Model 1
+```{r}
+pR2(model1)
+```
+(McFadden $R^{2}$) = 0.42
+
+##Model 2
+```{r}
+pR2(model2)
+```
+(McFadden $R^{2}$) = 0.87
+
+##Model 3
+```{r}
+pR2(model3)
+```
+(McFadden $R^{2}$) = 0.69
+##Model 4
+```{r}
+pR2(model4)
+```
+(McFadden $R^{2}$) = 0.60 
+
+##Model 5
+```{r}
+pR2(model5)
+```
+(McFadden $R^{2}$) = 0.03
+
+##Model 6
+```{r}
+pR2(model6)
+```
+(McFadden $R^{2}$) = 0.67
+
+## Interpretation of McFadden $R^{2}$
+Based on McFadden $R^{2}$, we conclude that that percent of the uncentanity produced by the intercept only model (Model 2) has been explained (Calibrated) by the Full Model (Model1). 
+
+- Model 1 :- Very Good
+
+- Model 2 :- BEST
+ 
+- Model 3 :- Excellent
+
+- Model 4 :- Excellent
+
+- Model 5 :- Satisfactory
+
+- Model 6 :- Excellent
+
+
+# Explanatory power of Odds 
+
+##Model 1
+```{r echo=FALSE}
+exp(coef(model1))
+```
+If X1  increases by one unit, then the odds to become Solvent goes up by 1.09664058  times compared to Bankrupt.
+
+##Model 2
+```{r echo=FALSE}
+exp(coef(model2))
+```
+If X2  increases by one unit, then the odds to become Solvent goes up by 1.2692136  times compared to Bankrupt.
+
+##Model 3
+```{r echo=FALSE}
+exp(coef(model3))
+```
+If X3  increases by one unit, then the odds to become Solvent goes up by 1.2349518  times compared to Bankrupt.
+
+
+##Model 4
+```{r echo=FALSE}
+exp(coef(model4))
+```
+If X4  increases by one unit, then the odds to become Solvent goes up by 1.03926153  times compared to Bankrupt.
+
+##Model 5
+```{r echo=FALSE}
+exp(coef(model5))
+```
+If X5  increases by one unit, then the odds to become Solvent goes up by 1.5080304  times compared to Bankrupt.
+
+##Model 6
+```{r echo=FALSE}
+exp(coef(model6))
+```
+If X1 increases by one unit, then the odds to become Solvent goes up by 1.063189268  times compared to Bankrupt keeping X4 constant.
+
+If X1 increases by one unit, then the odds to become Solvent goes up by 1.034588154  times compared to Bankrupt keeping X1 constant.
+
+
+
+# Confusion Matrix for measuring predictive accuracy
+```{r}
+#MODEL 1
+trainData_probabilities1 <- predict(model1,type="response",data=training)
+cutoff1 <- floor(trainData_probabilities1+0.5)
+table(Actual = training$Status,Predicted = cutoff1)
+```
+
+- 81% accuracy
+
+- The model predicted 5 will Solvent but actually they were Bankrupt
+
+- The model predicted 5 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 2
+trainData_probabilities2 <- predict(model2,type="response",data=training)
+cutoff2 <- floor(trainData_probabilities2+0.5)
+table(Actual = training$Status,Predicted = cutoff2)
+```
+
+- 96% accuracy
+
+- The model predicted 1 will Solvent but actually they were Bankrupt
+
+- The model predicted 1 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 3
+trainData_probabilities3 <- predict(model3,type="response",data=training)
+cutoff3 <- floor(trainData_probabilities3+0.5)
+table(Actual = training$Status,Predicted = cutoff3)
+```
+
+- 92% accuracy
+
+- The model predicted 3 will Solvent but actually they were Bankrupt
+
+- The model predicted 1 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 4
+trainData_probabilities4 <- predict(model4,type="response",data=training)
+cutoff4 <- floor(trainData_probabilities4+0.5)
+table(Actual = training$Status,Predicted = cutoff4)
+```
+
+- 87% accuracy
+
+- The model predicted 4 will Solvent but actually they were Bankrupt
+
+- The model predicted 3 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 5
+trainData_probabilities5 <- predict(model5,type="response",data=training)
+cutoff5 <- floor(trainData_probabilities5+0.5)
+table(Actual = training$Status,Predicted = cutoff5)
+```
+
+- 66% accuracy
+
+- The model predicted 7 will Solvent but actually they were Bankrupt
+
+- The model predicted 11 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 6
+trainData_probabilities6 <- predict(model6,type="response",data=training)
+cutoff6 <- floor(trainData_probabilities6+0.5)
+table(Actual = training$Status,Predicted = cutoff6)
+```
+
+- 91% accuracy
+
+- The model predicted 2 will Solvent but actually they were Bankrupt
+
+- The model predicted 3 will be Bankrupt but actually they were Solvent
+
+
+# Validate the Model on test data
+
+```{r}
+#MODEL 1
+testData_probabilities1<- predict(model1,type="response",newdata=test)
+cutoff1 <- floor(testData_probabilities1+0.5)
+table(Actual = test$Status,Predicted = cutoff1)
+```
+
+- 83% accuracy
+
+- The model predicted 0 will Solvent but actually they were Bankrupt
+
+- The model predicted 2 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 2
+testData_probabilities2<- predict(model2,type="response",newdata=test)
+cutoff2 <- floor(testData_probabilities2+0.5)
+table(Actual = test$Status,Predicted = cutoff2)
+```
+
+- 92% accuracy
+
+- The model predicted 1 will Solvent but actually they were Bankrupt
+
+- The model predicted 0 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 3
+testData_probabilities3<- predict(model3,type="response",newdata=test)
+cutoff3 <- floor(testData_probabilities3+0.5)
+table(Actual = test$Status,Predicted = cutoff3)
+```
+
+- 92% accuracy
+
+- The model predicted 0 will Solvent but actually they were Bankrupt
+
+- The model predicted 1 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 4
+testData_probabilities4<- predict(model4,type="response",newdata=test)
+cutoff4 <- floor(testData_probabilities4+0.5)
+table(Actual = test$Status,Predicted = cutoff4)
+```
+
+- 75% accuracy
+
+- The model predicted 1 will Solvent but actually they were Bankrupt
+
+- The model predicted 2 will be Bankrupt but actually they were Solvent
+
+```{r}
+#MODEL 5
+testData_probabilities5<- predict(model5,type="response",newdata=test)
+cutoff5 <- floor(testData_probabilities5+0.5)
+table(Actual = test$Status,Predicted = cutoff5)
+```
+
+- 50% accuracy
+
+- The model predicted 6 will be Bankrupt but actually they all were Solvent.
+
+```{r}
+#MODEL 6
+testData_probabilities6<- predict(model6,type="response",newdata=test)
+cutoff6 <- floor(testData_probabilities6+0.5)
+table(Actual = test$Status,Predicted = cutoff6)
+```
+
+- 75% accuracy
+
+- The model predicted 1 will Solvent but actually they were Bankrupt
+
+- The model predicted 2 will be Bankrupt but actually they were Solvent
+
+
+#Conclusion
+
+|PARAMETERS \ Rank| First | Second | Third | Fourth | Fifth | Sixth  |
+|--------------|------------|------------|------------|------------|-------------|------------|
+|AIC(The Lower The Better)|2|3|6|4|1|5|
+|McFadden $R^{2}$|2|3|6|4|1|5|
+|Training Data Prediction|2|3|6|4|1|5|
+|Test Data Prediction |2|3|1|6|4|5|
+
+
+Therefore Model 2 is the best model for predicting whether the company will be Bankrupt or Solvent. 
+
+
+
+
+
+
+
+
